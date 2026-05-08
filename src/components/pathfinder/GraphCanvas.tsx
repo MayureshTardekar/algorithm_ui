@@ -39,8 +39,11 @@ const SHORT_LABEL: Record<string, string> = {
   amb_andheri: "Andheri Amb.",
 };
 
-const LABEL_OFFSET: Record<string, { dx: number; dy: number; anchor?: "start" | "middle" | "end" }> = {
-  amb_andheri: { dx: -10, dy: -22, anchor: "end" },
+const LABEL_OFFSET: Record<
+  string,
+  { dx: number; dy: number; anchor?: "start" | "middle" | "end" }
+> = {
+  amb_andheri: { dx: -8, dy: -22, anchor: "end" },
   andheri: { dx: 0, dy: -22 },
   cooper: { dx: 0, dy: -24 },
   lilavati: { dx: 0, dy: -22 },
@@ -116,7 +119,7 @@ export function GraphCanvas({
         const isBlocked = blocked.has(key);
         const isPath = pathSet.has(key);
         const isActive = activeEdge === key;
-        const showDistance = isActive || isPath || edgeMode;
+        const showDistance = true;
         const effectiveKm = e.km * trafficMultiplier;
         const mx = (A.x + B.x) / 2;
         const my = (A.y + B.y) / 2;
@@ -158,25 +161,25 @@ export function GraphCanvas({
             {showDistance && (
               <g pointerEvents="none">
                 <rect
-                  x={mx - 18}
-                  y={my - 17}
-                  width={36}
-                  height={15}
-                  rx={3}
+                  x={mx - 21}
+                  y={my - 19}
+                  width={42}
+                  height={17}
+                  rx={4}
                   fill={
                     isActive
                       ? "var(--accent)"
                       : isPath
                         ? "var(--pathline)"
-                        : "oklch(0.14 0.03 265 / 0.86)"
+                        : "oklch(0.12 0.03 265 / 0.82)"
                   }
                   stroke="oklch(1 0 0 / 0.18)"
                 />
                 <text
                   x={mx}
-                  y={my - 6}
+                  y={my - 7}
                   textAnchor="middle"
-                  fontSize="9"
+                  fontSize="10"
                   fontWeight="800"
                   fill={
                     isActive || isPath
@@ -220,7 +223,7 @@ export function GraphCanvas({
       )}
 
       {resultDistance !== null && (
-        <g transform="translate(22 22)" pointerEvents="none">
+        <g transform="translate(632 22)" pointerEvents="none">
           <rect
             width={190}
             height={54}

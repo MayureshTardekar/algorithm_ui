@@ -20,28 +20,28 @@ export interface GraphEdge {
 
 export const NODES: GraphNode[] = [
   // Hospitals (green)
-  { id: "kem", label: "KEM Hospital", type: "hospital", x: 430, y: 470 },
-  { id: "sion_h", label: "Sion Hospital", type: "hospital", x: 600, y: 430 },
-  { id: "lilavati", label: "Lilavati", type: "hospital", x: 280, y: 280 },
-  { id: "hinduja", label: "Hinduja", type: "hospital", x: 360, y: 380 },
-  { id: "bombay_h", label: "Bombay Hospital", type: "hospital", x: 290, y: 590 },
-  { id: "cooper", label: "Cooper Hospital", type: "hospital", x: 200, y: 170 },
+  { id: "kem", label: "KEM Hospital", type: "hospital", x: 450, y: 535 },
+  { id: "sion_h", label: "Sion Hospital", type: "hospital", x: 720, y: 500 },
+  { id: "lilavati", label: "Lilavati", type: "hospital", x: 285, y: 285 },
+  { id: "hinduja", label: "Hinduja", type: "hospital", x: 365, y: 430 },
+  { id: "bombay_h", label: "Bombay Hospital", type: "hospital", x: 220, y: 650 },
+  { id: "cooper", label: "Cooper Hospital", type: "hospital", x: 190, y: 150 },
 
   // Ambulance stations (amber)
-  { id: "amb_dharavi", label: "Dharavi Amb.", type: "ambulance", x: 510, y: 410 },
-  { id: "amb_bandra", label: "Bandra Amb.", type: "ambulance", x: 240, y: 340 },
-  { id: "amb_andheri", label: "Andheri Amb.", type: "ambulance", x: 150, y: 130 },
+  { id: "amb_dharavi", label: "Dharavi Amb.", type: "ambulance", x: 620, y: 475 },
+  { id: "amb_bandra", label: "Bandra Amb.", type: "ambulance", x: 165, y: 365 },
+  { id: "amb_andheri", label: "Andheri Amb.", type: "ambulance", x: 95, y: 110 },
 
   // Junctions (blue)
-  { id: "andheri", label: "Andheri", type: "junction", x: 200, y: 110 },
-  { id: "bandra", label: "Bandra", type: "junction", x: 280, y: 330 },
-  { id: "mahim", label: "Mahim", type: "junction", x: 380, y: 340 },
-  { id: "matunga", label: "Matunga", type: "junction", x: 480, y: 380 },
-  { id: "dadar", label: "Dadar", type: "junction", x: 470, y: 430 },
-  { id: "parel", label: "Parel", type: "junction", x: 400, y: 500 },
-  { id: "worli", label: "Worli", type: "junction", x: 320, y: 530 },
-  { id: "sion", label: "Sion", type: "junction", x: 600, y: 380 },
-  { id: "kurla", label: "Kurla", type: "junction", x: 700, y: 350 },
+  { id: "andheri", label: "Andheri", type: "junction", x: 165, y: 70 },
+  { id: "bandra", label: "Bandra", type: "junction", x: 275, y: 350 },
+  { id: "mahim", label: "Mahim", type: "junction", x: 405, y: 355 },
+  { id: "matunga", label: "Matunga", type: "junction", x: 530, y: 405 },
+  { id: "dadar", label: "Dadar", type: "junction", x: 505, y: 480 },
+  { id: "parel", label: "Parel", type: "junction", x: 390, y: 575 },
+  { id: "worli", label: "Worli", type: "junction", x: 280, y: 595 },
+  { id: "sion", label: "Sion", type: "junction", x: 700, y: 400 },
+  { id: "kurla", label: "Kurla", type: "junction", x: 805, y: 360 },
 ];
 
 export const EDGES: GraphEdge[] = [
