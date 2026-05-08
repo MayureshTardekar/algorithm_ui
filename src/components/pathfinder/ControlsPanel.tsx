@@ -1,5 +1,6 @@
-import { Slider } from "@/components/ui/slider";
+import { BarChart3, Play, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +17,7 @@ interface Props {
   onReset: () => void;
   onCompareAll: () => void;
   canRun: boolean;
+  canCompare: boolean;
   status: string;
 }
 
@@ -30,6 +32,7 @@ export function ControlsPanel({
   onReset,
   onCompareAll,
   canRun,
+  canCompare,
   status,
 }: Props) {
   return (
@@ -40,7 +43,7 @@ export function ControlsPanel({
             Traffic Multiplier
           </label>
           <span className="font-mono text-xs text-accent">
-            {traffic.toFixed(1)}×
+            {traffic.toFixed(1)}x
           </span>
         </div>
         <Slider
@@ -78,7 +81,7 @@ export function ControlsPanel({
         <div>
           <div className="font-display text-sm font-semibold">Block Roads</div>
           <div className="text-[11px] text-muted-foreground">
-            Click any edge to toggle
+            Click edges while enabled
           </div>
         </div>
         <Switch checked={edgeMode} onCheckedChange={onEdgeMode} />
@@ -94,21 +97,25 @@ export function ControlsPanel({
           disabled={!canRun}
           className="font-display tracking-wider"
         >
-          ▶ RUN
+          <Play className="size-4" />
+          RUN
         </Button>
         <Button
           onClick={onReset}
           variant="secondary"
           className="font-display tracking-wider"
         >
+          <RotateCcw className="size-4" />
           RESET
         </Button>
       </div>
       <Button
         onClick={onCompareAll}
+        disabled={!canCompare}
         variant="outline"
         className="w-full font-display tracking-wider"
       >
+        <BarChart3 className="size-4" />
         COMPARE ALL 5
       </Button>
     </div>

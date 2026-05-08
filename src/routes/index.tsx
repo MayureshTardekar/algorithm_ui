@@ -1,36 +1,37 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { GraphCanvas } from "@/components/pathfinder/GraphCanvas";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { AlgoSelector, ALGOS } from "@/components/pathfinder/AlgoSelector";
-import { ControlsPanel, type Speed } from "@/components/pathfinder/ControlsPanel";
-import { ResultsPanel } from "@/components/pathfinder/ResultsPanel";
-import { MatrixHeatmap } from "@/components/pathfinder/MatrixHeatmap";
 import { ComparisonTable } from "@/components/pathfinder/ComparisonTable";
+import { ControlsPanel, type Speed } from "@/components/pathfinder/ControlsPanel";
+import { GraphCanvas } from "@/components/pathfinder/GraphCanvas";
+import { MatrixHeatmap } from "@/components/pathfinder/MatrixHeatmap";
+import { ResultsPanel } from "@/components/pathfinder/ResultsPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   precomputeFloyd,
-  runAlgo,
   runAStar,
+  runAlgo,
   runBFS,
   runBellmanFord,
   runDijkstra,
   runFloydLookup,
   type AlgoName,
+  type RunOpts,
   type RunResult,
+  type StepKind,
 } from "@/lib/algos";
-import { getNode } from "@/lib/graph-data";
+import { edgeKey, getNode } from "@/lib/graph-data";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       {
-        title:
-          "Mumbai Emergency Pathfinder — Pathfinding Algorithm Visualizer",
+        title: "Mumbai Emergency Pathfinder - Pathfinding Algorithm Visualizer",
       },
       {
         name: "description",
         content:
-          "Interactive Mumbai-themed visualizer for Dijkstra, A*, BFS, Bellman-Ford, and Floyd-Warshall. Click hospitals and ambulance stations to see each algorithm work.",
+          "Interactive Mumbai-themed visualizer for Dijkstra, A*, BFS, Bellman-Ford, and Floyd-Warshall.",
       },
       {
         property: "og:title",
@@ -39,7 +40,7 @@ export const Route = createFileRoute("/")({
       {
         property: "og:description",
         content:
-          "Side-by-side visualization of 5 classic shortest-path algorithms on a Mumbai map.",
+          "Side-by-side visualization of 5 classic shortest-path algorithms on a Mumbai emergency graph.",
       },
     ],
   }),
@@ -60,54 +61,90 @@ function Index() {
   const [frame, setFrame] = useState(0);
   const [comparison, setComparison] = useState<RunResult[]>([]);
 
-  const fw = useMemo(
-    () => precomputeFloyd(blocked, traffic),
-    [blocked, traffic],
-  );
+  const fw = useMemo(() => precomputeFloyd(blocked, traffic), [blocked, traffic]);
 
   const algoMeta = ALGOS.find((a) => a.id === algo)!;
   const needsTarget = algoMeta.needsTarget;
 
-  // animation
   useEffect(() => {
-    if (!result) return;
     setFrame(0);
-    if (!result.steps.length) return;
+    if (!result?.steps.length) return;
+
     let cancelled = false;
-    let i = 0;
+    let i = 1;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    setFrame(1);
+
     const tick = () => {
-      if (cancelled) return;
-      i++;
+      if (cancelled || !result) return;
+      if (i >= result.steps.length) return;
+      i += 1;
       setFrame(i);
-      if (i < result.steps.length) {
-        setTimeout(tick, SPEED_MS[speed]);
-      }
+      timer = setTimeout(tick, SPEED_MS[speed]);
     };
-    const id = setTimeout(tick, SPEED_MS[speed]);
+
+    if (result.steps.length > 1) {
+      timer = setTimeout(tick, SPEED_MS[speed]);
+    }
+
     return () => {
       cancelled = true;
-      clearTimeout(id);
+      if (timer) clearTimeout(timer);
     };
   }, [result, speed]);
 
-  // derive visualization state from frame
-  const { visitedSet, currentNode, finalPath } = useMemo(() => {
-    const visited = new Set<string>();
-    let current: string | null = null;
-    let path: string[] = [];
-    if (!result) return { visitedSet: visited, currentNode: null, finalPath: [] };
-    const upto = Math.min(frame, result.steps.length);
-    for (let i = 0; i < upto; i++) {
-      const s = result.steps[i];
-      if (s.kind === "visit") visited.add(s.node);
-      else if (s.kind === "current") current = s.node;
-      else if (s.kind === "relax") {
-        visited.add(s.from);
-        visited.add(s.to);
-      } else if (s.kind === "final") path = s.path;
-    }
-    return { visitedSet: visited, currentNode: current, finalPath: path };
-  }, [result, frame]);
+  const { visitedSet, currentNode, finalPath, activeEdge, currentStep } =
+    useMemo(() => {
+      const visited = new Set<string>();
+      let current: string | null = null;
+      let path: string[] = [];
+      let active: string | null = null;
+      let step: StepKind | null = null;
+
+      if (!result) {
+        return {
+          visitedSet: visited,
+          currentNode: null,
+          finalPath: [],
+          activeEdge: null,
+          currentStep: null,
+        };
+      }
+
+      const upto = Math.min(frame, result.steps.length);
+      step = upto > 0 ? result.steps[upto - 1] : null;
+
+      for (let i = 0; i < upto; i++) {
+        const s = result.steps[i];
+        if (s.kind === "visit") {
+          visited.add(s.node);
+        } else if (s.kind === "current") {
+          current = s.node;
+        } else if (s.kind === "relax") {
+          visited.add(s.from);
+          visited.add(s.to);
+        } else if (s.kind === "final") {
+          path = s.path;
+        }
+      }
+
+      if (
+        step &&
+        (step.kind === "relax" || step.kind === "check") &&
+        step.from &&
+        step.to
+      ) {
+        active = edgeKey(step.from, step.to);
+      }
+
+      return {
+        visitedSet: visited,
+        currentNode: current,
+        finalPath: path,
+        activeEdge: active,
+        currentStep: step,
+      };
+    }, [result, frame]);
 
   function clearAnim() {
     setResult(null);
@@ -116,6 +153,8 @@ function Index() {
 
   function handleNodeClick(id: string) {
     clearAnim();
+    const clicked = getNode(id);
+
     if (needsTarget) {
       if (!source) {
         setSource(id);
@@ -123,13 +162,17 @@ function Index() {
       } else if (id === source) {
         setSource(null);
         setTarget(null);
-      } else {
+      } else if (clicked.type === "hospital") {
         setTarget(id);
+      } else {
+        setSource(id);
+        setTarget(null);
       }
-    } else {
-      setSource(id);
-      setTarget(null);
+      return;
     }
+
+    setSource(id);
+    setTarget(null);
   }
 
   function handleEdgeClick(key: string) {
@@ -145,15 +188,25 @@ function Index() {
   function handleAlgo(a: AlgoName) {
     clearAnim();
     setAlgo(a);
-    const m = ALGOS.find((x) => x.id === a)!;
-    if (!m.needsTarget) setTarget(null);
+    const meta = ALGOS.find((x) => x.id === a)!;
+    if (!meta.needsTarget) {
+      setTarget(null);
+    } else if (target && getNode(target).type !== "hospital") {
+      setTarget(null);
+    }
+  }
+
+  function baseOpts(): RunOpts | null {
+    if (!source) return null;
+    return { source, target, blocked, trafficMultiplier: traffic };
   }
 
   function handleRun() {
-    if (!source) return;
+    const opts = baseOpts();
+    if (!opts) return;
     if (needsTarget && !target) return;
-    const opts = { source, target, blocked, trafficMultiplier: traffic };
-    const r = runAlgo(algo, opts, fw);
+    const runTarget = needsTarget ? target : null;
+    const r = runAlgo(algo, { ...opts, target: runTarget }, fw);
     setResult(r);
     setComparison([]);
   }
@@ -170,31 +223,47 @@ function Index() {
 
   function handleCompareAll() {
     if (!source) return;
-    const opts = { source, target, blocked, trafficMultiplier: traffic };
-    const dj = runDijkstra(opts);
-    const tForA = target ?? dj.target;
+    const nearestOpts: RunOpts = {
+      source,
+      target: null,
+      blocked,
+      trafficMultiplier: traffic,
+    };
+    const dj = runDijkstra(nearestOpts);
+    const selectedHospital =
+      target && getNode(target).type === "hospital" ? target : null;
+    const lookupTarget = selectedHospital ?? dj.target;
+
     const rows: RunResult[] = [
       dj,
-      runAStar({ ...opts, target: tForA }),
-      runBFS(opts),
-      runBellmanFord(opts),
-      tForA ? runFloydLookup(fw, source, tForA) : runFloydLookup(fw, source, source),
+      runAStar({ ...nearestOpts, target: lookupTarget }),
+      runBFS(nearestOpts),
+      runBellmanFord(nearestOpts),
+      lookupTarget
+        ? runFloydLookup(fw, source, lookupTarget, nearestOpts)
+        : runAlgo("floyd", nearestOpts, fw),
     ];
+
     setComparison(rows);
     setResult(null);
+    setFrame(0);
   }
 
   const status = (() => {
-    if (edgeMode) return "Edge mode: click an edge to block/unblock.";
-    if (!source) return needsTarget ? "Click a source node." : "Click any node to set source.";
-    if (needsTarget && !target)
-      return `Source: ${getNode(source).label}. Now click a target hospital.`;
-    if (needsTarget && target)
-      return `${getNode(source).label} → ${getNode(target).label}. Press RUN.`;
-    return `Source: ${getNode(source).label}. Press RUN to find nearest hospital.`;
+    if (edgeMode) return "Edge mode: click a road to block or unblock it.";
+    if (!source) return "Click a Mumbai EMS node to set the source.";
+    if (needsTarget && !target) {
+      return `Source: ${getNode(source).label}. Click a hospital target.`;
+    }
+    if (needsTarget && target) {
+      return `${getNode(source).label} -> ${getNode(target).label}. Press RUN.`;
+    }
+    return `Source: ${getNode(source).label}. Press RUN for nearest hospital.`;
   })();
 
   const canRun = !!source && (!needsTarget || !!target);
+  const canCompare = !!source;
+  const visibleFrame = result ? Math.min(frame, result.steps.length) : 0;
 
   return (
     <div className="min-h-screen text-foreground">
@@ -205,7 +274,7 @@ function Index() {
               <span className="text-primary">MUMBAI</span> EMERGENCY PATHFINDER
             </h1>
             <p className="text-xs text-muted-foreground font-mono">
-              5 shortest-path algorithms · 18 nodes · live edge weights
+              5 shortest-path algorithms / 18 nodes / traffic-aware roads
             </p>
           </div>
           <div className="flex gap-3 text-[11px] font-mono">
@@ -220,7 +289,6 @@ function Index() {
       </header>
 
       <main className="px-4 md:px-6 py-4 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4 max-w-[1600px] mx-auto">
-        {/* Left: graph */}
         <section className="glass rounded-xl p-2 min-h-[480px]">
           <GraphCanvas
             source={source}
@@ -229,13 +297,14 @@ function Index() {
             currentNode={currentNode}
             finalPath={finalPath}
             blocked={blocked}
+            activeEdge={activeEdge}
+            trafficMultiplier={traffic}
             edgeMode={edgeMode}
             onNodeClick={handleNodeClick}
             onEdgeClick={handleEdgeClick}
           />
         </section>
 
-        {/* Right: panels */}
         <aside className="space-y-3">
           <div className="glass rounded-xl p-3">
             <PanelTitle>Algorithm</PanelTitle>
@@ -257,16 +326,20 @@ function Index() {
               onReset={handleReset}
               onCompareAll={handleCompareAll}
               canRun={canRun}
+              canCompare={canCompare}
               status={status}
             />
           </div>
           <div className="glass rounded-xl p-3">
             <PanelTitle>Results</PanelTitle>
-            <ResultsPanel result={result} />
+            <ResultsPanel
+              result={result}
+              currentStep={currentStep}
+              frame={visibleFrame}
+            />
           </div>
         </aside>
 
-        {/* Bottom: tabs for comparison & matrix */}
         <section className="lg:col-span-2 glass rounded-xl p-3">
           <Tabs defaultValue="compare">
             <TabsList>
@@ -277,20 +350,20 @@ function Index() {
               <ComparisonTable rows={comparison} />
             </TabsContent>
             <TabsContent value="matrix" className="pt-3">
-              <MatrixHeatmap fw={fw} />
+              <MatrixHeatmap fw={fw} source={source} target={target} />
             </TabsContent>
           </Tabs>
         </section>
       </main>
 
       <footer className="text-center text-[11px] text-muted-foreground py-4 font-mono">
-        Built with TanStack Start · all algorithms run client-side in pure JS
+        Built with TanStack Start / all algorithms run client-side in pure TypeScript
       </footer>
     </div>
   );
 }
 
-function PanelTitle({ children }: { children: React.ReactNode }) {
+function PanelTitle({ children }: { children: ReactNode }) {
   return (
     <div className="font-display text-xs font-bold tracking-[0.2em] uppercase text-muted-foreground mb-2">
       {children}

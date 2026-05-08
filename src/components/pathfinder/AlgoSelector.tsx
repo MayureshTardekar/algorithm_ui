@@ -1,5 +1,5 @@
-import { cn } from "@/lib/utils";
 import type { AlgoName } from "@/lib/algos";
+import { cn } from "@/lib/utils";
 
 const ALGOS: {
   id: AlgoName;
@@ -12,35 +12,35 @@ const ALGOS: {
     id: "dijkstra",
     name: "Dijkstra",
     tag: "Greedy + PQ",
-    desc: "Shortest km to nearest hospital",
+    desc: "Weighted nearest hospital",
     needsTarget: false,
   },
   {
     id: "astar",
     name: "A*",
-    tag: "Heuristic",
-    desc: "Pick a target hospital, watch focused search",
+    tag: "g + h = f",
+    desc: "Selected hospital route",
     needsTarget: true,
   },
   {
     id: "bfs",
     name: "BFS",
-    tag: "Layered",
-    desc: "Fewest turns (ignores km)",
+    tag: "Hop layers",
+    desc: "Fewest-hop hospital baseline",
     needsTarget: false,
   },
   {
     id: "bellman",
     name: "Bellman-Ford",
-    tag: "V-1 rounds",
-    desc: "Edge relaxation, slower but general",
+    tag: "V - 1 rounds",
+    desc: "Relaxations plus cycle check",
     needsTarget: false,
   },
   {
     id: "floyd",
     name: "Floyd-Warshall",
-    tag: "Precompute O(V³)",
-    desc: "All-pairs matrix, O(1) lookup",
+    tag: "All pairs",
+    desc: "Matrix heatmap and lookup",
     needsTarget: true,
   },
 ];
@@ -67,7 +67,7 @@ export function AlgoSelector({
               : "border-border bg-card/40 hover:border-primary/40",
           )}
         >
-          <div className="flex items-baseline justify-between">
+          <div className="flex items-baseline justify-between gap-3">
             <span className="font-display text-base font-bold tracking-wide">
               {a.name}
             </span>

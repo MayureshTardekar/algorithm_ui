@@ -1,4 +1,4 @@
-import { NODES, EDGES, edgeKey, type GraphNode } from "@/lib/graph-data";
+import { EDGES, NODES, edgeKey, type GraphNode } from "@/lib/graph-data";
 
 interface Props {
   source: string | null;
@@ -7,6 +7,8 @@ interface Props {
   currentNode: string | null;
   finalPath: string[];
   blocked: Set<string>;
+  activeEdge: string | null;
+  trafficMultiplier: number;
   onNodeClick: (id: string) => void;
   onEdgeClick: (key: string) => void;
   edgeMode: boolean;
@@ -21,7 +23,7 @@ const TYPE_COLOR: Record<GraphNode["type"], string> = {
 const TYPE_ICON: Record<GraphNode["type"], string> = {
   hospital: "+",
   ambulance: "A",
-  junction: "•",
+  junction: "o",
 };
 
 export function GraphCanvas({
@@ -31,6 +33,8 @@ export function GraphCanvas({
   currentNode,
   finalPath,
   blocked,
+  activeEdge,
+  trafficMultiplier,
   onNodeClick,
   onEdgeClick,
   edgeMode,
@@ -70,15 +74,17 @@ export function GraphCanvas({
       <rect width="850" height="700" fill="url(#bgGlow)" />
       <rect width="850" height="700" fill="url(#grid)" />
 
-      {/* edges */}
       {EDGES.map((e) => {
         const A = NODES.find((n) => n.id === e.a)!;
         const B = NODES.find((n) => n.id === e.b)!;
         const key = edgeKey(e.a, e.b);
         const isBlocked = blocked.has(key);
         const isPath = pathSet.has(key);
+        const isActive = activeEdge === key;
+        const effectiveKm = e.km * trafficMultiplier;
         const mx = (A.x + B.x) / 2;
         const my = (A.y + B.y) / 2;
+
         return (
           <g key={key}>
             <line
@@ -87,14 +93,17 @@ export function GraphCanvas({
               x2={B.x}
               y2={B.y}
               stroke={
-                isPath
-                  ? "var(--pathline)"
-                  : isBlocked
-                    ? "var(--destructive)"
-                    : "oklch(1 0 0 / 0.18)"
+                isActive
+                  ? "var(--accent)"
+                  : isPath
+                    ? "var(--pathline)"
+                    : isBlocked
+                      ? "var(--destructive)"
+                      : "oklch(1 0 0 / 0.18)"
               }
-              strokeWidth={isPath ? 4 : isBlocked ? 2 : 1.5}
+              strokeWidth={isActive ? 5 : isPath ? 4 : isBlocked ? 2 : 1.5}
               strokeDasharray={isBlocked ? "4 4" : undefined}
+              className={isActive ? "edge-active" : undefined}
               style={{ cursor: edgeMode ? "pointer" : "default" }}
               onClick={() => edgeMode && onEdgeClick(key)}
             />
@@ -119,7 +128,7 @@ export function GraphCanvas({
               fontFamily="var(--font-mono)"
               pointerEvents="none"
             >
-              {e.km}
+              {effectiveKm.toFixed(1)}
             </text>
             {isBlocked && (
               <text
@@ -130,14 +139,13 @@ export function GraphCanvas({
                 fill="var(--destructive)"
                 pointerEvents="none"
               >
-                ✕
+                X
               </text>
             )}
           </g>
         );
       })}
 
-      {/* animated path overlay */}
       {finalPath.length > 1 && (
         <polyline
           key={pathPoints}
@@ -152,7 +160,6 @@ export function GraphCanvas({
         />
       )}
 
-      {/* nodes */}
       {NODES.map((n) => {
         const isSource = n.id === source;
         const isTarget = n.id === target;
@@ -207,9 +214,7 @@ export function GraphCanvas({
               cy={n.y}
               r={isTarget ? 13 : 10}
               fill={fill}
-              stroke={
-                isTarget ? "oklch(0.98 0 0)" : "oklch(0.16 0.04 265)"
-              }
+              stroke={isTarget ? "oklch(0.98 0 0)" : "oklch(0.16 0.04 265)"}
               strokeWidth={isTarget ? 2.5 : 2}
             />
             <text
@@ -233,7 +238,11 @@ export function GraphCanvas({
               fill="oklch(0.96 0.01 250)"
               pointerEvents="none"
               fontFamily="var(--font-display)"
-              style={{ paintOrder: "stroke", stroke: "oklch(0.16 0.04 265)", strokeWidth: 3 }}
+              style={{
+                paintOrder: "stroke",
+                stroke: "oklch(0.16 0.04 265)",
+                strokeWidth: 3,
+              }}
             >
               {n.label}
             </text>
