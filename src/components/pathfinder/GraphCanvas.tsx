@@ -9,6 +9,7 @@ interface Props {
   blocked: Set<string>;
   activeEdge: string | null;
   trafficMultiplier: number;
+  resultDistance: number | null;
   onNodeClick: (id: string) => void;
   onEdgeClick: (key: string) => void;
   edgeMode: boolean;
@@ -26,6 +27,39 @@ const TYPE_ICON: Record<GraphNode["type"], string> = {
   junction: "o",
 };
 
+const SHORT_LABEL: Record<string, string> = {
+  kem: "KEM",
+  sion_h: "Sion Hosp.",
+  lilavati: "Lilavati",
+  hinduja: "Hinduja",
+  bombay_h: "Bombay Hosp.",
+  cooper: "Cooper",
+  amb_dharavi: "Dharavi Amb.",
+  amb_bandra: "Bandra Amb.",
+  amb_andheri: "Andheri Amb.",
+};
+
+const LABEL_OFFSET: Record<string, { dx: number; dy: number; anchor?: "start" | "middle" | "end" }> = {
+  amb_andheri: { dx: -10, dy: -22, anchor: "end" },
+  andheri: { dx: 0, dy: -22 },
+  cooper: { dx: 0, dy: -24 },
+  lilavati: { dx: 0, dy: -22 },
+  amb_bandra: { dx: -16, dy: -18, anchor: "end" },
+  bandra: { dx: 0, dy: -24 },
+  mahim: { dx: 0, dy: -22 },
+  hinduja: { dx: 0, dy: -20 },
+  matunga: { dx: 0, dy: -24 },
+  amb_dharavi: { dx: 16, dy: -16, anchor: "start" },
+  dadar: { dx: 0, dy: -22 },
+  kem: { dx: 0, dy: -24 },
+  parel: { dx: 0, dy: -22 },
+  worli: { dx: 0, dy: -22 },
+  bombay_h: { dx: 0, dy: -24 },
+  sion: { dx: 0, dy: -24 },
+  sion_h: { dx: 0, dy: 24 },
+  kurla: { dx: 0, dy: -22 },
+};
+
 export function GraphCanvas({
   source,
   target,
@@ -35,6 +69,7 @@ export function GraphCanvas({
   blocked,
   activeEdge,
   trafficMultiplier,
+  resultDistance,
   onNodeClick,
   onEdgeClick,
   edgeMode,
@@ -81,6 +116,7 @@ export function GraphCanvas({
         const isBlocked = blocked.has(key);
         const isPath = pathSet.has(key);
         const isActive = activeEdge === key;
+        const showDistance = isActive || isPath || edgeMode;
         const effectiveKm = e.km * trafficMultiplier;
         const mx = (A.x + B.x) / 2;
         const my = (A.y + B.y) / 2;
@@ -119,17 +155,40 @@ export function GraphCanvas({
                 onClick={() => onEdgeClick(key)}
               />
             )}
-            <text
-              x={mx}
-              y={my - 4}
-              textAnchor="middle"
-              fontSize="9"
-              fill="oklch(0.7 0.03 255)"
-              fontFamily="var(--font-mono)"
-              pointerEvents="none"
-            >
-              {effectiveKm.toFixed(1)}
-            </text>
+            {showDistance && (
+              <g pointerEvents="none">
+                <rect
+                  x={mx - 18}
+                  y={my - 17}
+                  width={36}
+                  height={15}
+                  rx={3}
+                  fill={
+                    isActive
+                      ? "var(--accent)"
+                      : isPath
+                        ? "var(--pathline)"
+                        : "oklch(0.14 0.03 265 / 0.86)"
+                  }
+                  stroke="oklch(1 0 0 / 0.18)"
+                />
+                <text
+                  x={mx}
+                  y={my - 6}
+                  textAnchor="middle"
+                  fontSize="9"
+                  fontWeight="800"
+                  fill={
+                    isActive || isPath
+                      ? "oklch(0.14 0.03 265)"
+                      : "oklch(0.92 0.02 250)"
+                  }
+                  fontFamily="var(--font-mono)"
+                >
+                  {effectiveKm.toFixed(1)}
+                </text>
+              </g>
+            )}
             {isBlocked && (
               <text
                 x={mx}
@@ -160,6 +219,41 @@ export function GraphCanvas({
         />
       )}
 
+      {resultDistance !== null && (
+        <g transform="translate(22 22)" pointerEvents="none">
+          <rect
+            width={190}
+            height={54}
+            rx={8}
+            fill="oklch(0.14 0.03 265 / 0.9)"
+            stroke="var(--pathline)"
+            strokeWidth={1.5}
+          />
+          <text
+            x={14}
+            y={20}
+            fontSize="10"
+            fontWeight="800"
+            fill="oklch(0.7 0.03 255)"
+            fontFamily="var(--font-mono)"
+          >
+            TOTAL DISTANCE
+          </text>
+          <text
+            x={14}
+            y={42}
+            fontSize="22"
+            fontWeight="800"
+            fill="var(--pathline)"
+            fontFamily="var(--font-display)"
+          >
+            {Number.isFinite(resultDistance)
+              ? `${resultDistance.toFixed(2)} km`
+              : "unreachable"}
+          </text>
+        </g>
+      )}
+
       {NODES.map((n) => {
         const isSource = n.id === source;
         const isTarget = n.id === target;
@@ -172,6 +266,8 @@ export function GraphCanvas({
         else if (isVisited) fill = "var(--visited)";
         if (isCurrent) fill = "oklch(0.98 0 0)";
         if (isSource) fill = "var(--destructive)";
+        const labelOffset = LABEL_OFFSET[n.id] ?? { dx: 0, dy: -16 };
+        const label = SHORT_LABEL[n.id] ?? n.label;
 
         return (
           <g
@@ -230,9 +326,9 @@ export function GraphCanvas({
               {TYPE_ICON[n.type]}
             </text>
             <text
-              x={n.x}
-              y={n.y - 16}
-              textAnchor="middle"
+              x={n.x + labelOffset.dx}
+              y={n.y + labelOffset.dy}
+              textAnchor={labelOffset.anchor ?? "middle"}
               fontSize="11"
               fontWeight="600"
               fill="oklch(0.96 0.01 250)"
@@ -244,7 +340,7 @@ export function GraphCanvas({
                 strokeWidth: 3,
               }}
             >
-              {n.label}
+              {label}
             </text>
           </g>
         );

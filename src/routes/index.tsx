@@ -299,6 +299,7 @@ function Index() {
             blocked={blocked}
             activeEdge={activeEdge}
             trafficMultiplier={traffic}
+            resultDistance={result ? result.distance : null}
             edgeMode={edgeMode}
             onNodeClick={handleNodeClick}
             onEdgeClick={handleEdgeClick}
