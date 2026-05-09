@@ -1,4 +1,4 @@
-import { BarChart3, Play, RotateCcw } from "lucide-react";
+import { BarChart3, Play, RotateCcw, MousePointer2, Ban, Move } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
@@ -81,31 +81,49 @@ export function ControlsPanel({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-2">
-        <div className="flex items-center justify-between rounded-md border border-border p-2.5">
-          <div>
-            <div className="font-display text-sm font-semibold">Block Roads</div>
-            <div className="text-[11px] text-muted-foreground">
-              Click edges to toggle
-            </div>
-          </div>
-          <Switch checked={edgeMode} onCheckedChange={(v) => {
-            onEdgeMode(v);
-            if (v) onDragMode(false);
-          }} />
+      <div>
+        <div className="font-display text-sm font-semibold tracking-wide mb-2">
+          Interaction Tool
         </div>
+        <div className="grid grid-cols-3 gap-2">
+          <button
+            onClick={() => { onDragMode(false); onEdgeMode(false); }}
+            className={cn(
+              "flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all duration-300",
+              (!dragMode && !edgeMode)
+                ? "bg-primary/20 border-primary text-primary shadow-[0_0_15px_rgba(var(--primary),0.1)]"
+                : "bg-white/5 border-white/5 text-white/40 hover:border-white/20 hover:text-white/60"
+            )}
+          >
+            <MousePointer2 className="size-4" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">Select</span>
+          </button>
+          
+          <button
+            onClick={() => { onDragMode(false); onEdgeMode(true); }}
+            className={cn(
+              "flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all duration-300",
+              edgeMode
+                ? "bg-destructive/20 border-destructive text-destructive shadow-[0_0_15px_rgba(var(--destructive),0.1)]"
+                : "bg-white/5 border-white/5 text-white/40 hover:border-white/20 hover:text-white/60"
+            )}
+          >
+            <Ban className="size-4" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">Block</span>
+          </button>
 
-        <div className="flex items-center justify-between rounded-md border border-border p-2.5">
-          <div>
-            <div className="font-display text-sm font-semibold">Drag Nodes</div>
-            <div className="text-[11px] text-muted-foreground">
-              Rearrange map layout
-            </div>
-          </div>
-          <Switch checked={dragMode} onCheckedChange={(v) => {
-            onDragMode(v);
-            if (v) onEdgeMode(false);
-          }} />
+          <button
+            onClick={() => { onDragMode(true); onEdgeMode(false); }}
+            className={cn(
+              "flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all duration-300",
+              dragMode
+                ? "bg-accent/20 border-accent text-accent shadow-[0_0_15px_rgba(var(--accent),0.1)]"
+                : "bg-white/5 border-white/5 text-white/40 hover:border-white/20 hover:text-white/60"
+            )}
+          >
+            <Move className="size-4" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">Drag</span>
+          </button>
         </div>
       </div>
 

@@ -135,6 +135,7 @@ export function GraphCanvas({
   function handlePointerDown(e: React.PointerEvent) {
     const target = e.target as SVGElement;
     const nodeG = target.closest("[data-node-id]");
+    const isEdge = target.hasAttribute("data-edge-key");
     
     startPoint.current = { x: e.clientX, y: e.clientY };
     didMove.current = false;
@@ -147,6 +148,9 @@ export function GraphCanvas({
       }
       // If not dragMode, we do NOTHING here, so we don't start panning.
       // This allows the browser to wait for the click event.
+    } else if (isEdge && edgeMode) {
+      // Clicking an edge in block mode: do not capture pointer or pan.
+      // Let the native onClick event fire on the line.
     } else {
       setIsPanning(true);
       lastPoint.current = { x: e.clientX, y: e.clientY };
@@ -269,6 +273,7 @@ export function GraphCanvas({
                 />
                 {edgeMode && (
                   <line
+                    data-edge-key={key}
                     x1={A.x}
                     y1={A.y}
                     x2={B.x}
@@ -319,6 +324,7 @@ export function GraphCanvas({
                     fontSize="14"
                     fill="var(--destructive)"
                     pointerEvents="none"
+                    className="node-pop"
                   >
                     X
                   </text>
@@ -470,21 +476,6 @@ export function GraphCanvas({
         </div>
       )}
       
-      <div className="absolute top-4 left-4 pointer-events-none flex flex-col gap-2">
-        <div className="glass px-3 py-1.5 border border-white/10 rounded text-[10px] font-mono text-white/40">
-          SCROLL TO ZOOM • DRAG TO PAN • GRAB NODES TO MOVE
-        </div>
-        <div className={cn(
-          "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-all duration-300",
-          dragMode 
-            ? "bg-accent/20 border-accent text-accent animate-pulse" 
-            : edgeMode 
-              ? "bg-destructive/20 border-destructive text-destructive animate-pulse"
-              : "bg-primary/20 border-primary text-primary"
-        )}>
-          {dragMode ? "Mode: Dragging Nodes" : edgeMode ? "Mode: Blocking Roads" : "Mode: Selection Active"}
-        </div>
-      </div>
     </div>
   );
 }

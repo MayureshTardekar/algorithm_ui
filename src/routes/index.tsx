@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { cn } from "@/lib/utils";
 import { AlgoSelector, ALGOS } from "@/components/pathfinder/AlgoSelector";
 import { ComparisonTable } from "@/components/pathfinder/ComparisonTable";
 import { ControlsPanel, type Speed } from "@/components/pathfinder/ControlsPanel";
@@ -8,6 +9,8 @@ import { MatrixHeatmap } from "@/components/pathfinder/MatrixHeatmap";
 import { ResultsPanel } from "@/components/pathfinder/ResultsPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { ChevronUp, ChevronDown, BarChart3, Maximize2, LayoutDashboard } from "lucide-react";
+import { AnalysisOverlay } from "@/components/pathfinder/AnalysisOverlay";
 import {
   precomputeFloyd,
   runAStar,
@@ -275,6 +278,8 @@ function Index() {
   const visibleFrame = result ? Math.min(frame, result.steps.length) : 0;
 
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showAnalysis, setShowAnalysis] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
 
   useEffect(() => {
     const handleFsChange = () => {
@@ -390,14 +395,38 @@ function Index() {
           </div>
           
           {/* Status Overlay */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 pointer-events-none">
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 pointer-events-none flex flex-col items-center gap-2">
+            {(dragMode || edgeMode) && (
+              <div className={cn(
+                "px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] border glass transition-all duration-300",
+                dragMode 
+                  ? "border-accent text-accent animate-pulse shadow-[0_0_15px_rgba(var(--accent),0.2)]" 
+                  : "border-destructive text-destructive animate-pulse shadow-[0_0_15px_rgba(var(--destructive),0.2)]"
+              )}>
+                {dragMode ? "Mode: Dragging Nodes" : "Mode: Blocking Roads"}
+              </div>
+            )}
+
             <div className="glass px-6 py-2.5 rounded-full border border-primary/20 shadow-lg flex items-center gap-3">
               <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
               <span className="text-sm font-display font-medium tracking-wide">
                 {status}
               </span>
             </div>
+
+            <div className="text-[9px] font-mono text-white/20 tracking-[0.3em] uppercase">
+              Scroll to Zoom • Drag to Pan
+            </div>
           </div>
+
+          <AnalysisOverlay 
+            isOpen={showAnalysis}
+            onClose={() => setShowAnalysis(false)}
+            comparison={comparison}
+            fw={fw}
+            source={source}
+            target={target}
+          />
         </section>
 
         {/* Sidebar */}
@@ -409,7 +438,20 @@ function Index() {
             </div>
 
             <div className="glass rounded-xl p-4 border border-white/5">
-              <PanelTitle>2. Global Controls</PanelTitle>
+              <PanelTitle>2. Analysis Dashboard</PanelTitle>
+              <Button
+                onClick={() => setShowAnalysis(true)}
+                className="w-full h-12 bg-primary/10 hover:bg-primary/20 border border-primary/20 text-primary font-display tracking-[0.1em] text-xs font-bold uppercase relative group overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <LayoutDashboard className="size-4 mr-2" />
+                Open Analytical Overlay
+                <div className="absolute -inset-1 bg-primary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+              </Button>
+            </div>
+
+            <div className="glass rounded-xl p-4 border border-white/5">
+              <PanelTitle>3. Global Controls</PanelTitle>
               <ControlsPanel
                 traffic={traffic}
                 onTraffic={(n) => {
@@ -432,7 +474,6 @@ function Index() {
             </div>
 
             <div className="glass rounded-xl p-4 border border-white/5 min-h-[120px]">
-              <PanelTitle>3. Execution Trace</PanelTitle>
               <ResultsPanel
                 result={result}
                 currentStep={currentStep}
@@ -440,30 +481,7 @@ function Index() {
               />
             </div>
 
-            {/* Bottom Section moved inside Sidebar or Collapsible */}
-            <div className="glass rounded-xl p-4 border border-white/5">
-              <PanelTitle>4. Data Analysis</PanelTitle>
-              <Tabs defaultValue="compare" className="w-full">
-                <TabsList className="w-full grid grid-cols-2 h-8">
-                  <TabsTrigger value="compare" className="text-[10px]">Comparison</TabsTrigger>
-                  <TabsTrigger value="matrix" className="text-[10px]">Distance Matrix</TabsTrigger>
-                </TabsList>
-                <TabsContent value="compare" className="mt-2 overflow-x-auto">
-                  <ComparisonTable rows={comparison} />
-                </TabsContent>
-                <TabsContent value="matrix" className="mt-2">
-                  <MatrixHeatmap fw={fw} source={source} target={target} />
-                </TabsContent>
-              </Tabs>
-            </div>
           </div>
-
-          <footer className="shrink-0 p-4 border-t border-border bg-muted/10">
-            <div className="flex items-center justify-between opacity-60">
-              <span className="text-[10px] font-mono">V2.4.0_STABLE</span>
-              <span className="text-[10px] font-mono uppercase tracking-tighter">Pure TypeScript Engine</span>
-            </div>
-          </footer>
         </aside>
       </main>
     </div>
