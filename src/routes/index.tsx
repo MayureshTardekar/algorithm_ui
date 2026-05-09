@@ -20,7 +20,7 @@ import {
   type RunResult,
   type StepKind,
 } from "@/lib/algos";
-import { edgeKey, getNode } from "@/lib/graph-data";
+import { edgeKey, getNode, NODES } from "@/lib/graph-data";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -56,7 +56,8 @@ function Index() {
   const [traffic, setTraffic] = useState(1);
   const [speed, setSpeed] = useState<Speed>("medium");
   const [edgeMode, setEdgeMode] = useState(false);
-  const [blocked, setBlocked] = useState<Set<string>>(new Set());
+  const [nodes, setNodes] = useState(NODES);
+  const [blocked, setBlocked] = useState(new Set<string>());
   const [result, setResult] = useState<RunResult | null>(null);
   const [frame, setFrame] = useState(0);
   const [comparison, setComparison] = useState<RunResult[]>([]);
@@ -175,6 +176,10 @@ function Index() {
     setTarget(null);
   }
 
+  function handleNodeMove(id: string, x: number, y: number) {
+    setNodes((prev) => prev.map((n) => (n.id === id ? { ...n, x, y } : n)));
+  }
+
   function handleEdgeClick(key: string) {
     clearAnim();
     setBlocked((prev) => {
@@ -215,6 +220,7 @@ function Index() {
     setSource(null);
     setTarget(null);
     setBlocked(new Set());
+    setNodes(NODES);
     setResult(null);
     setFrame(0);
     setComparison([]);
@@ -301,8 +307,10 @@ function Index() {
             trafficMultiplier={traffic}
             resultDistance={result ? result.distance : null}
             edgeMode={edgeMode}
+            nodes={nodes}
             onNodeClick={handleNodeClick}
             onEdgeClick={handleEdgeClick}
+            onNodeMove={handleNodeMove}
           />
         </section>
 
