@@ -7,6 +7,7 @@ import { GraphCanvas } from "@/components/pathfinder/GraphCanvas";
 import { MatrixHeatmap } from "@/components/pathfinder/MatrixHeatmap";
 import { ResultsPanel } from "@/components/pathfinder/ResultsPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import {
   precomputeFloyd,
   runAStar,
@@ -270,9 +271,18 @@ function Index() {
   })();
 
   const canRun = !!source && (!needsTarget || !!target);
+  const canCompare = !!source;
   const visibleFrame = result ? Math.min(frame, result.steps.length) : 0;
 
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFsChange);
+    return () => document.removeEventListener("fullscreenchange", handleFsChange);
+  }, []);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -287,7 +297,7 @@ function Index() {
   };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden text-foreground bg-background">
+    <div className="h-svh flex flex-col overflow-hidden text-foreground bg-background">
       <header className="shrink-0 px-6 py-3 border-b border-border glass z-10">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-4">
@@ -458,7 +468,6 @@ function Index() {
       </main>
     </div>
   );
-}
 }
 
 function PanelTitle({ children }: { children: ReactNode }) {

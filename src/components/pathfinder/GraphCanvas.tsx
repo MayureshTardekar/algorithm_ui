@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import { EDGES, edgeKey, type GraphNode } from "@/lib/graph-data";
 
 interface Props {
@@ -196,7 +197,18 @@ export function GraphCanvas({
         ref={svgRef}
         viewBox="0 0 850 700"
         className="w-full h-full"
-        style={{ display: "block", cursor: isPanning ? "grabbing" : dragMode ? (draggedNode ? "grabbing" : "grab") : "default" }}
+        style={{
+          display: "block",
+          cursor: isPanning
+            ? "grabbing"
+            : edgeMode
+              ? "crosshair"
+              : dragMode
+                ? draggedNode
+                  ? "grabbing"
+                  : "grab"
+                : "default",
+        }}
         onWheel={handleWheel}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -458,9 +470,19 @@ export function GraphCanvas({
         </div>
       )}
       
-      <div className="absolute bottom-4 left-4 pointer-events-none">
+      <div className="absolute top-4 left-4 pointer-events-none flex flex-col gap-2">
         <div className="glass px-3 py-1.5 border border-white/10 rounded text-[10px] font-mono text-white/40">
           SCROLL TO ZOOM • DRAG TO PAN • GRAB NODES TO MOVE
+        </div>
+        <div className={cn(
+          "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-all duration-300",
+          dragMode 
+            ? "bg-accent/20 border-accent text-accent animate-pulse" 
+            : edgeMode 
+              ? "bg-destructive/20 border-destructive text-destructive animate-pulse"
+              : "bg-primary/20 border-primary text-primary"
+        )}>
+          {dragMode ? "Mode: Dragging Nodes" : edgeMode ? "Mode: Blocking Roads" : "Mode: Selection Active"}
         </div>
       </div>
     </div>
