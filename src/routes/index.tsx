@@ -58,6 +58,7 @@ function Index() {
   const [edgeMode, setEdgeMode] = useState(false);
   const [nodes, setNodes] = useState(NODES);
   const [blocked, setBlocked] = useState(new Set<string>());
+  const [dragMode, setDragMode] = useState(false);
   const [result, setResult] = useState<RunResult | null>(null);
   const [frame, setFrame] = useState(0);
   const [comparison, setComparison] = useState<RunResult[]>([]);
@@ -225,6 +226,7 @@ function Index() {
     setFrame(0);
     setComparison([]);
     setEdgeMode(false);
+    setDragMode(false);
   }
 
   function handleCompareAll() {
@@ -311,6 +313,7 @@ function Index() {
             onNodeClick={handleNodeClick}
             onEdgeClick={handleEdgeClick}
             onNodeMove={handleNodeMove}
+            dragMode={dragMode}
           />
         </section>
 
@@ -331,6 +334,8 @@ function Index() {
               onSpeed={setSpeed}
               edgeMode={edgeMode}
               onEdgeMode={setEdgeMode}
+              dragMode={dragMode}
+              onDragMode={setDragMode}
               onRun={handleRun}
               onReset={handleReset}
               onCompareAll={handleCompareAll}

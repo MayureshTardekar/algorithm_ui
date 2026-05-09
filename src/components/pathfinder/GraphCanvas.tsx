@@ -16,6 +16,7 @@ interface Props {
   onEdgeClick: (key: string) => void;
   onNodeMove: (id: string, x: number, y: number) => void;
   edgeMode: boolean;
+  dragMode: boolean;
 }
 
 const TYPE_COLOR: Record<GraphNode["type"], string> = {
@@ -81,6 +82,7 @@ export function GraphCanvas({
   onEdgeClick,
   onNodeMove,
   edgeMode,
+  dragMode,
 }: Props) {
   // Zoom & Pan State
   const [transform, setTransform] = useState({ x: 0, y: 0, k: 1 });
@@ -89,6 +91,8 @@ export function GraphCanvas({
   
   const svgRef = useRef<SVGSVGElement>(null);
   const lastPoint = useRef({ x: 0, y: 0 });
+  const startPoint = useRef({ x: 0, y: 0 });
+  const didMove = useRef(false);
 
   const pathSet = new Set<string>();
   for (let i = 0; i < finalPath.length - 1; i++) {
@@ -131,10 +135,17 @@ export function GraphCanvas({
     const target = e.target as SVGElement;
     const nodeG = target.closest("[data-node-id]");
     
+    startPoint.current = { x: e.clientX, y: e.clientY };
+    didMove.current = false;
+
     if (nodeG && !edgeMode) {
-      const id = nodeG.getAttribute("data-node-id")!;
-      setDraggedNode(id);
-      svgRef.current?.setPointerCapture(e.pointerId);
+      if (dragMode) {
+        const id = nodeG.getAttribute("data-node-id")!;
+        setDraggedNode(id);
+        svgRef.current?.setPointerCapture(e.pointerId);
+      }
+      // If not dragMode, we do NOTHING here, so we don't start panning.
+      // This allows the browser to wait for the click event.
     } else {
       setIsPanning(true);
       lastPoint.current = { x: e.clientX, y: e.clientY };
@@ -147,7 +158,13 @@ export function GraphCanvas({
     if (!svg) return;
     const rect = svg.getBoundingClientRect();
 
-    if (draggedNode) {
+    // Check if we moved enough to call it a drag or pan
+    if (!didMove.current) {
+      const dist = Math.hypot(e.clientX - startPoint.current.x, e.clientY - startPoint.current.y);
+      if (dist > 5) didMove.current = true;
+    }
+
+    if (draggedNode && dragMode) {
       // Normalize to 850x700 space
       const svgX = (e.clientX - rect.left) * (850 / rect.width);
       const svgY = (e.clientY - rect.top) * (700 / rect.height);
@@ -179,7 +196,7 @@ export function GraphCanvas({
         ref={svgRef}
         viewBox="0 0 850 700"
         className="w-full h-full"
-        style={{ display: "block", cursor: isPanning ? "grabbing" : draggedNode ? "grabbing" : "default" }}
+        style={{ display: "block", cursor: isPanning ? "grabbing" : dragMode ? (draggedNode ? "grabbing" : "grab") : "default" }}
         onWheel={handleWheel}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -319,11 +336,14 @@ export function GraphCanvas({
             const isVisited = visitedSet.has(n.id);
             const inPath = finalPath.includes(n.id);
             const baseColor = TYPE_COLOR[n.type];
+            
             let fill = baseColor;
             if (inPath) fill = "var(--pathline)";
             else if (isVisited) fill = "var(--visited)";
             if (isCurrent) fill = "oklch(0.98 0 0)";
             if (isSource) fill = "var(--destructive)";
+            if (isTarget) fill = "var(--hospital)"; // Ensure hospital color for target
+
             const labelOffset = LABEL_OFFSET[n.id] ?? { dx: 0, dy: -16 };
             const label = SHORT_LABEL[n.id] ?? n.label;
 
@@ -331,11 +351,11 @@ export function GraphCanvas({
               <g
                 key={n.id}
                 data-node-id={n.id}
-                style={{ cursor: edgeMode ? "default" : draggedNode === n.id ? "grabbing" : "grab" }}
+                style={{ cursor: edgeMode ? "default" : dragMode ? "grab" : "pointer" }}
                 onClick={(e) => {
-                  // Prevent click if we were dragging
-                  if (!isPanning && !draggedNode) {
-                    !edgeMode && onNodeClick(n.id);
+                  // Prevent selection if we were dragging/panning
+                  if (!didMove.current && !edgeMode) {
+                    onNodeClick(n.id);
                   }
                 }}
               >
@@ -349,7 +369,17 @@ export function GraphCanvas({
                     className="node-source-pulse"
                   />
                 )}
-                {isCurrent && !isSource && (
+                {isTarget && (
+                  <circle
+                    cx={n.x}
+                    cy={n.y}
+                    r={20}
+                    fill="var(--hospital)"
+                    opacity={0.35}
+                    className="node-source-pulse" // Reuse pulse for target too
+                  />
+                )}
+                {isCurrent && !isSource && !isTarget && (
                   <circle
                     cx={n.x}
                     cy={n.y}
@@ -359,7 +389,7 @@ export function GraphCanvas({
                     className="node-current-pulse"
                   />
                 )}
-                {isVisited && !inPath && !isSource && (
+                {isVisited && !inPath && !isSource && !isTarget && (
                   <circle
                     cx={n.x}
                     cy={n.y}
@@ -372,10 +402,10 @@ export function GraphCanvas({
                 <circle
                   cx={n.x}
                   cy={n.y}
-                  r={isTarget ? 13 : 10}
+                  r={isTarget || isSource ? 13 : 10}
                   fill={fill}
-                  stroke={isTarget ? "oklch(0.98 0 0)" : "oklch(0.16 0.04 265)"}
-                  strokeWidth={isTarget ? 2.5 : 2}
+                  stroke={isTarget || isSource ? "oklch(0.98 0 0)" : "oklch(0.16 0.04 265)"}
+                  strokeWidth={isTarget || isSource ? 2.5 : 2}
                 />
                 <text
                   x={n.x}

@@ -13,6 +13,8 @@ interface Props {
   onSpeed: (s: Speed) => void;
   edgeMode: boolean;
   onEdgeMode: (b: boolean) => void;
+  dragMode: boolean;
+  onDragMode: (b: boolean) => void;
   onRun: () => void;
   onReset: () => void;
   onCompareAll: () => void;
@@ -28,6 +30,8 @@ export function ControlsPanel({
   onSpeed,
   edgeMode,
   onEdgeMode,
+  dragMode,
+  onDragMode,
   onRun,
   onReset,
   onCompareAll,
@@ -77,14 +81,32 @@ export function ControlsPanel({
         </div>
       </div>
 
-      <div className="flex items-center justify-between rounded-md border border-border p-2.5">
-        <div>
-          <div className="font-display text-sm font-semibold">Block Roads</div>
-          <div className="text-[11px] text-muted-foreground">
-            Click edges while enabled
+      <div className="grid grid-cols-1 gap-2">
+        <div className="flex items-center justify-between rounded-md border border-border p-2.5">
+          <div>
+            <div className="font-display text-sm font-semibold">Block Roads</div>
+            <div className="text-[11px] text-muted-foreground">
+              Click edges to toggle
+            </div>
           </div>
+          <Switch checked={edgeMode} onCheckedChange={(v) => {
+            onEdgeMode(v);
+            if (v) onDragMode(false);
+          }} />
         </div>
-        <Switch checked={edgeMode} onCheckedChange={onEdgeMode} />
+
+        <div className="flex items-center justify-between rounded-md border border-border p-2.5">
+          <div>
+            <div className="font-display text-sm font-semibold">Drag Nodes</div>
+            <div className="text-[11px] text-muted-foreground">
+              Rearrange map layout
+            </div>
+          </div>
+          <Switch checked={dragMode} onCheckedChange={(v) => {
+            onDragMode(v);
+            if (v) onEdgeMode(false);
+          }} />
+        </div>
       </div>
 
       <div className="text-xs font-mono px-2 py-1.5 rounded bg-muted/40 text-muted-foreground border border-border min-h-[2.2rem] flex items-center">
